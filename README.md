@@ -7,52 +7,18 @@ Transform unstructured web content into governed, queryable, AI-enriched data us
 **End-to-end flow:**
 
 ```
-Live Web Pages ──> AI Gateway (LLM Extraction) ──> Raw UC Table ──> SQL AI Functions ──> Enriched UC Table
-                        |                                                  |
-                   Every call logged                              classify, summarize,
-                   (tokens, cost, caller)                         extract, custom queries
-```
+ ┌──────────────────┐    ┌───────────────────────────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+ │                  │    │           AI Gateway                  │    │                 │    │                 │
+ │  Live URL Fetch  │───▶│  ┌─────────────────────────────────┐  │───▶│  SQL Functions/ │───▶│  UC Tables      │
+ │  (3 web pages)   │    │  │ Logging │ Rate Limits │ Auth    │  │    │  Enrichment     │    │  (6 tables)     │
+ │                  │    │  │ Audit   │ Guardrails  │ Routing │  │    │                 │    │                 │
+ └──────────────────┘    │  └─────────────────────────────────┘  │    └─────────────────┘    └─────────────────┘
+                         │         ▼            ▼                │
+                         │    Claude    or   Llama   or   GPT    │
+                         │    (swappable without code changes)   │
+                         └───────────────────────────────────────┘
 
----
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          DATABRICKS AI PLATFORM                                 │
-│                                                                                 │
-│  ┌──────────┐    ┌─────────────────────────────┐    ┌────────────────────────┐  │
-│  │          │    │       AI GATEWAY             │    │    Unity Catalog       │  │
-│  │  Live    │───>│  ┌───────────────────────┐   │───>│                        │  │
-│  │  URL     │    │  │ Usage Tracking        │   │    │  Volume: raw HTML      │  │
-│  │  Fetch   │    │  │ Payload Logging       │   │    │  Volume: extracted JSON │  │
-│  │          │    │  │ Rate Limits           │   │    │  Table: web_content_raw│  │
-│  └──────────┘    │  │ Cost Attribution      │   │    │                        │  │
-│                  │  │ Model Portability     │   │    └──────────┬─────────────┘  │
-│                  │  └───────────────────────┘   │               │                │
-│                  │       |          |           │               │                │
-│                  │   Claude    Llama    GPT     │               ▼                │
-│                  │   (swappable, zero code)     │    ┌────────────────────────┐  │
-│                  └─────────────────────────────┘    │   SQL AI Functions      │  │
-│                                                     │                        │  │
-│                  ┌─────────────────────────────┐    │  ai_classify()         │  │
-│                  │    System Tables             │    │  ai_summarize()        │  │
-│                  │                              │    │  ai_extract()          │  │
-│                  │  system.ai_gateway.usage     │    │  ai_query()            │  │
-│                  │  - tokens per call           │    │                        │  │
-│                  │  - caller identity           │    └──────────┬─────────────┘  │
-│                  │  - latency                   │               │                │
-│                  │  - cost                      │               ▼                │
-│                  │                              │    ┌────────────────────────┐  │
-│                  │  Inference Tables             │    │  web_content_enriched  │  │
-│                  │  - full request payloads     │    │                        │  │
-│                  │  - full response payloads    │    │  + topic classification│  │
-│                  │                              │    │  + summary             │  │
-│                  └─────────────────────────────┘    │  + entities            │  │
-│                                                     │  + value proposition   │  │
-│                                                     │  + competitive intel   │  │
-│                                                     └────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
